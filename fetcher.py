@@ -18,7 +18,7 @@ assert r.status_code == requests.codes.ok, "無法擷取農藥資訊網 " + HOME
 farm_list = re.findall(r'id="farmhidden_([\w]*)"', r.text)
 #loop over all farm id
 pesticide_df = pd.DataFrame()
-for farm in farm_list[0:10]:
+for farm in farm_list:
     print ('Start downloading', farm)
     df = drug_list(farm)
     if (df.empty != True):
