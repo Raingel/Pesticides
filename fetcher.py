@@ -4,6 +4,7 @@ import re
 import argparse
 import sys
 import threading
+import os
 parser = argparse.ArgumentParser()
 parser.add_argument("-a",
                     "--action",
@@ -13,39 +14,54 @@ parser.add_argument("-a",
 #jupyter會傳一個-f進來，不這樣接會有錯誤
 args, unknown = parser.parse_known_args()
 
-def chemical_list (farm = 'A010101'):
+def chemical_list_dl (farm = 'A010101', path = ''):
     URI = 'https://pesticide.baphiq.gov.tw/information/Query/BugUserange/?flag=&bug=&farm='+farm
-    try:
-        df = pd.read_html(URI)
-        return df[0]
-    except ValueError as e:
-        return pd.DataFrame()
+    retry_counter = 0
+    while retry_counter<5:
+        try:
+            df = pd.read_html(URI)[0]
+            df.to_csv(path, index = False)
+            print ('Success:', farm)
+            break
+        except ValueError as e:
+            #no table found
+            break
+        except Exception as e:
+            print (e)
+            retry_counter += 1
     
 if args.action == 'chemicals':
     HOME_URI = "https://pesticide.baphiq.gov.tw/information/Query/Bug"
     r = requests.get(HOME_URI)
     assert r.status_code == requests.codes.ok, "無法擷取農藥資訊網 " + HOME_URI
-
     #retrieve farm id list from homepage
     farm_list = re.findall(r'id="farmhidden_([\w]*)"', r.text)
-    #loop over all farm id
+    #loop over and download from all farm id
+    pesticide_df = pd.DataFrame()
+    threads = []
+    for index, farm in enumerate(farm_list):
+        print ('Start downloading', farm)
+        thread = threading.Thread(target = chemical_list_dl, args = (farm, './tmp/'+farm+'.csv'))
+        thread.start()
+        threads.append(thread)
+        if (index+1) % 20 == 0:
+            print('Waiting', index)
+            for thread in threads :
+                thread.join()            
+    #wait all thread done
+    for thread in threads :
+        thread.join()
+    
+    #import and merge tmp file from all farm id
     pesticide_df = pd.DataFrame()
     for farm in farm_list:
-        print ('Start downloading', farm)
-        retry_counter = 0
-        while retry_counter<5:
-            try:
-                df = chemical_list(farm)
-                break
-            except requests.HTTPError as e:
-                print (e, farm)
-                retry_counter += 1
-
-        if (df.empty != True):
-            pesticide_df = pesticide_df.append(df)
-            print ('Success', farm)
-        else:
-            print ('Failed', farm)
+        tmp_path = './tmp/'+farm+'.csv'
+        try:
+            pesticide_df = pesticide_df.append(pd.read_csv(tmp_path))
+            #remove temp file
+            os.remove(tmp_path)
+        except Exception as e:
+            print('Loading failed:', farm)
     #remove duplicated records
     pesticide_df.drop_duplicates(inplace = True)
     pesticide_df.reset_index(inplace = True, drop = True)
@@ -53,7 +69,6 @@ if args.action == 'chemicals':
     pesticide_df.to_csv('./data/pesticides.csv', encoding = 'utf-8-sig')
     #back up
     pesticide_df.to_csv('./data/pesticides_'+pd.to_datetime("today").strftime("%Y-%m-%d")+'.csv', encoding = 'utf-8-sig')
-
 
 
 def save_img(URI, path):
@@ -80,15 +95,14 @@ def label_page_parse (match):
         print ('Found images:', img_list)
         return (','.join(img_list))
 
+
 if args.action == 'label':
-    #TEST URI
     REGISTERED_URI = 'https://pesticide.baphiq.gov.tw/information/Query/RegisterList/?regtid=&regtnostart=&regtnoend=&pestcd=&compna=&prodga=&psbkna=&psbkga=&pestna=&pestga=&cidecd=&pescnt=&type=1&pagesize=55660&newquery=true'
-    REGISTERED_URI = 'https://pesticide.baphiq.gov.tw/information/Query/RegisterList/?regtid=&regtnostart=00192&regtnoend=00394&pestcd=&compna=&prodga=&psbkna=&psbkga=&pestna=&pestga=&cidecd=&pescnt=&type=1&pagesize=55660&newquery=true'
+    #REGISTERED_URI = 'https://pesticide.baphiq.gov.tw/information/Query/RegisterList/?regtid=&regtnostart=00192&regtnoend=00394&pestcd=&compna=&prodga=&psbkna=&psbkga=&pestna=&pestga=&cidecd=&pescnt=&type=1&pagesize=55660&newquery=true'
     r = requests.get(REGISTERED_URI)
     assert r.status_code == requests.codes.ok, "無法擷取標籤頁面 " + HOME_URI
     #parsing label values and download label images
     parsed_page = re.sub(r'<a href="(/information/Query/RegisterViewMark/\?regtid=\d*&regtno=\d*)" class="btn-s" target="_blank">標示</a>',label_page_parse, r.text)
-    
     #saving table as csv
     df = pd.read_html(parsed_page)
     registered_df = df[1]
@@ -98,7 +112,6 @@ if args.action == 'label':
     registered_df.to_csv('./data/registered.csv', encoding = 'utf-8-sig')
     #back up
     registered_df.to_csv('./data/registered_'+pd.to_datetime("today").strftime("%Y-%m-%d")+'.csv', encoding = 'utf-8-sig')
-
     #Downloading label images
     img_list = ','.join(registered_df['標示'].astype(str).tolist()).split(',')
     threads = []
