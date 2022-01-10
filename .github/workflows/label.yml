@@ -22,9 +22,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: exec fetecher
+    - name: exec fetecher 0-100
       run: |
-        python fetcher.py -a label
+        python fetcher.py -a label -s 00000 -e 00100
     - name: Commit files
       run: |
         git config --global user.email "allenstorm2005@gmail.com"
