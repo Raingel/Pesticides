@@ -11,17 +11,17 @@ parser.add_argument("-a",
                     "--action",
                     type=str,
                     default="label",
-                    help="'chemicals' for downloading list of chemicals; 'label' for downloading product labels")
+                    help="'chemicals' for downloading list of chemicals; 'label' for downloading product labels list; 'label_img' for downloading label images")
 parser.add_argument("-s",
                     "--regtnostart",
                     type=int,
                     default="00000",
-                    help="'chemicals' for downloading list of chemicals; 'label' for downloading product labels")
+                    help="start of the index of registered.csv, only work when -a label_img")
 parser.add_argument("-e",
                     "--regtnoend",
                     type=int,
                     default="99999",
-                    help="'chemicals' for downloading list of chemicals; 'label' for downloading product labels")     
+                    help="end of the index of registered.csv, only work when -a label_img")     
 #jupyter會傳一個-f進來，不這樣接會有錯誤
 args, unknown = parser.parse_known_args()
 
@@ -40,6 +40,37 @@ def chemical_list_dl (farm = 'A010101', path = ''):
         except Exception as e:
             print (e)
             retry_counter += 1
+
+def save_img(URI, path):
+    retry_counter = 0
+    while retry_counter<5:
+        try:
+            with open(path, 'wb') as f:
+                img = requests.get(URI)
+                f.write(img.content)
+            print (URI, 'downloaded')
+            break
+        except Exception as e:
+            retry_counter += 1
+            print(URI, e)
+        
+def label_page_parse (match):
+    PAGE_PATH = match.group(1)
+    retry_counter = 0
+    while retry_counter<5:
+        try:    
+            r = requests.get('https://pesticide.baphiq.gov.tw/'+PAGE_PATH)
+            img_list = re.findall(r'type=mark&url=([\w-]*.jpg)', r.text)
+            if len(img_list) == 0:
+                print ('No image found')
+                return ''
+            else:
+                print ('Found images:', img_list)
+                return (','.join(img_list))
+            break
+        except Exception as e:
+            retry_counter += 1
+        return ''
     
 if args.action == 'chemicals':
     HOME_URI = "https://pesticide.baphiq.gov.tw/information/Query/Bug"
@@ -82,40 +113,8 @@ if args.action == 'chemicals':
     pesticide_df.to_csv('./data/pesticides_'+pd.to_datetime("today").strftime("%Y-%m-%d")+'.csv', encoding = 'utf-8-sig')
 
 
-def save_img(URI, path):
-    retry_counter = 0
-    while retry_counter<5:
-        try:
-            with open(path, 'wb') as f:
-                img = requests.get(URI)
-                f.write(img.content)
-            print (URI, 'downloaded')
-            break
-        except Exception as e:
-            retry_counter += 1
-            print(URI, e)
-        
-def label_page_parse (match):
-    PAGE_PATH = match.group(1)
-    retry_counter = 0
-    while retry_counter<5:
-        try:    
-            r = requests.get('https://pesticide.baphiq.gov.tw/'+PAGE_PATH)
-            img_list = re.findall(r'type=mark&url=([\w-]*.jpg)', r.text)
-            if len(img_list) == 0:
-                print ('No image found')
-                return ''
-            else:
-                print ('Found images:', img_list)
-                return (','.join(img_list))
-            break
-        except Exception as e:
-            retry_counter += 1
-        return ''
-
-
 if args.action == 'label':
-    REGISTERED_URI = 'https://pesticide.baphiq.gov.tw/information/Query/RegisterList/?regtid=&regtnostart='+str(args.regtnostart)+'&regtnoend='+str(args.regtnoend)+'&pestcd=&compna=&prodga=&psbkna=&psbkga=&pestna=&pestga=&cidecd=&pescnt=&type=1&pagesize=55660&newquery=true'
+    REGISTERED_URI = 'https://pesticide.baphiq.gov.tw/information/Query/RegisterList/?regtid=&regtnostart=&regtnoend=&pestcd=&compna=&prodga=&psbkna=&psbkga=&pestna=&pestga=&cidecd=&pescnt=&type=1&pagesize=55660&newquery=true'
     #REGISTERED_URI = 'https://pesticide.baphiq.gov.tw/information/Query/RegisterList/?regtid=&regtnostart=00192&regtnoend=00394&pestcd=&compna=&prodga=&psbkna=&psbkga=&pestna=&pestga=&cidecd=&pescnt=&type=1&pagesize=55660&newquery=true'
     r = requests.get(REGISTERED_URI)
     assert r.status_code == requests.codes.ok, "無法擷取標籤頁面 " + HOME_URI
@@ -130,8 +129,12 @@ if args.action == 'label':
     registered_df.to_csv('./data/registered.csv', encoding = 'utf-8-sig')
     #back up
     registered_df.to_csv('./data/registered_'+pd.to_datetime("today").strftime("%Y-%m-%d")+'.csv', encoding = 'utf-8-sig')
+
+
+if args.action == 'label_img':
     #Downloading label images
-    img_list = ','.join(registered_df['標示'].astype(str).tolist()).split(',')
+    registered_df = pd.read_csv('./data/registered.csv', encoding = 'utf-8-sig')
+    img_list = ','.join(registered_df[args.regtnostart:args.regtnoend]['標示'].astype(str).tolist()).split(',')
     threads = []
     for index, img_name in enumerate(img_list):
         if '.jpg' not in img_name:
