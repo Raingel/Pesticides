@@ -5,6 +5,7 @@ import argparse
 import sys
 import threading
 import os
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-a",
                     "--action",
@@ -96,14 +97,21 @@ def save_img(URI, path):
         
 def label_page_parse (match):
     PAGE_PATH = match.group(1)
-    r = requests.get('https://pesticide.baphiq.gov.tw/'+PAGE_PATH)
-    img_list = re.findall(r'type=mark&url=([\w-]*.jpg)', r.text)
-    if len(img_list) == 0:
-        print ('No image found')
+    retry_counter = 0
+    while retry_counter<5:
+        try:    
+            r = requests.get('https://pesticide.baphiq.gov.tw/'+PAGE_PATH)
+            img_list = re.findall(r'type=mark&url=([\w-]*.jpg)', r.text)
+            if len(img_list) == 0:
+                print ('No image found')
+                return ''
+            else:
+                print ('Found images:', img_list)
+                return (','.join(img_list))
+            break
+        except Exception as e:
+            retry_counter += 1
         return ''
-    else:
-        print ('Found images:', img_list)
-        return (','.join(img_list))
 
 
 if args.action == 'label':
