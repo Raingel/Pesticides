@@ -24,7 +24,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: exec fetecher 0-100
       run: |
-        python fetcher.py -a label -s 00000 -e 00100
+        python fetcher.py -a label
     - name: Commit files
       run: |
         git config --global user.email "allenstorm2005@gmail.com"
