@@ -11,6 +11,16 @@ parser.add_argument("-a",
                     type=str,
                     default="label",
                     help="'chemicals' for downloading list of chemicals; 'label' for downloading product labels")
+parser.add_argument("-s",
+                    "--regtnostart",
+                    type=int,
+                    default="00000",
+                    help="'chemicals' for downloading list of chemicals; 'label' for downloading product labels")
+parser.add_argument("-e",
+                    "--regtnoend",
+                    type=int,
+                    default="99999",
+                    help="'chemicals' for downloading list of chemicals; 'label' for downloading product labels")     
 #jupyter會傳一個-f進來，不這樣接會有錯誤
 args, unknown = parser.parse_known_args()
 
@@ -97,7 +107,7 @@ def label_page_parse (match):
 
 
 if args.action == 'label':
-    REGISTERED_URI = 'https://pesticide.baphiq.gov.tw/information/Query/RegisterList/?regtid=&regtnostart=&regtnoend=&pestcd=&compna=&prodga=&psbkna=&psbkga=&pestna=&pestga=&cidecd=&pescnt=&type=1&pagesize=55660&newquery=true'
+    REGISTERED_URI = 'https://pesticide.baphiq.gov.tw/information/Query/RegisterList/?regtid=&regtnostart='+str(args.regtnostart)+'&regtnoend='+str(args.regtnoend)+'&pestcd=&compna=&prodga=&psbkna=&psbkga=&pestna=&pestga=&cidecd=&pescnt=&type=1&pagesize=55660&newquery=true'
     #REGISTERED_URI = 'https://pesticide.baphiq.gov.tw/information/Query/RegisterList/?regtid=&regtnostart=00192&regtnoend=00394&pestcd=&compna=&prodga=&psbkna=&psbkga=&pestna=&pestga=&cidecd=&pescnt=&type=1&pagesize=55660&newquery=true'
     r = requests.get(REGISTERED_URI)
     assert r.status_code == requests.codes.ok, "無法擷取標籤頁面 " + HOME_URI
