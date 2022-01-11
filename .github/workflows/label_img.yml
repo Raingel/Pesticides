@@ -22,7 +22,8 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: exec fetecher 0-9999
+        
+    - name: exec fetecher 0-1000
       run: |
         python fetcher.py -a label_img -s 0 -e 1000
     - name: Commit files
@@ -41,9 +42,107 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         branch: main
 
-    - name: exec fetecher 0-9999
+    - name: exec fetecher 1000-2000
       run: |
         python fetcher.py -a label_img -s 1000 -e 2000
+    - name: Commit files
+      continue-on-error: true
+      run: |
+        git config --global user.email "allenstorm2005@gmail.com"
+        git config --global user.name "Raingel(Github Action)"
+        git config --global http.postBuffer 524288000
+        git pull
+        git add .
+        git commit -m "last update: `date '+%Y-%m-%d %H:%M:%S'`"
+    - name: Push changes
+      continue-on-error: true
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: main
+
+
+    - name: exec fetecher 2000-3000
+      run: |
+        python fetcher.py -a label_img -s 2000 -e 3000
+    - name: Commit files
+      continue-on-error: true
+      run: |
+        git config --global user.email "allenstorm2005@gmail.com"
+        git config --global user.name "Raingel(Github Action)"
+        git config --global http.postBuffer 524288000
+        git pull
+        git add .
+        git commit -m "last update: `date '+%Y-%m-%d %H:%M:%S'`"
+    - name: Push changes
+      continue-on-error: true
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: main
+  
+  
+    - name: exec fetecher 3000-4000
+      run: |
+        python fetcher.py -a label_img -s 3000 -e 4000
+    - name: Commit files
+      continue-on-error: true
+      run: |
+        git config --global user.email "allenstorm2005@gmail.com"
+        git config --global user.name "Raingel(Github Action)"
+        git config --global http.postBuffer 524288000
+        git pull
+        git add .
+        git commit -m "last update: `date '+%Y-%m-%d %H:%M:%S'`"
+    - name: Push changes
+      continue-on-error: true
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: main
+        
+  
+  
+    - name: exec fetecher 4000-5000
+      run: |
+        python fetcher.py -a label_img -s 4000 -e 5000
+    - name: Commit files
+      continue-on-error: true
+      run: |
+        git config --global user.email "allenstorm2005@gmail.com"
+        git config --global user.name "Raingel(Github Action)"
+        git config --global http.postBuffer 524288000
+        git pull
+        git add .
+        git commit -m "last update: `date '+%Y-%m-%d %H:%M:%S'`"
+    - name: Push changes
+      continue-on-error: true
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: main
+        
+    - name: exec fetecher 5000-6000
+      run: |
+        python fetcher.py -a label_img -s 5000 -e 6000
+    - name: Commit files
+      continue-on-error: true
+      run: |
+        git config --global user.email "allenstorm2005@gmail.com"
+        git config --global user.name "Raingel(Github Action)"
+        git config --global http.postBuffer 524288000
+        git pull
+        git add .
+        git commit -m "last update: `date '+%Y-%m-%d %H:%M:%S'`"
+    - name: Push changes
+      continue-on-error: true
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: main
+    - name: exec fetecher 6000-7000
+      run: |
+        python fetcher.py -a label_img -s 6000 -e 7000
     - name: Commit files
       continue-on-error: true
       run: |
